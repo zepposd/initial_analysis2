@@ -1,0 +1,5 @@
+{
+  "name": "Foto_Digitization2",
+  "description": "An application to digitize text from images using OCR, summarize the content.",
+  "requestFramePermissions": []
+}
