@@ -1,6 +1,16 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect } from 'react';
 import { DigitizedFile, MetadataTitle } from '../types';
-import { CogIcon, TranslateIcon } from '../components/icons';
+import { CogIcon, TranslateIcon, UndoIconSimple, RedoIconSimple } from '../components/icons';
+import useUndoRedo from '../hooks/useUndoRedo';
+
+interface EditableState {
+    summary: string;
+    ocrText: string;
+    translationEn: string;
+    translationGr: string;
+    metadata: Record<string, string>;
+}
 
 export const EditFilePage: React.FC<{
     file: DigitizedFile;
@@ -11,34 +21,36 @@ export const EditFilePage: React.FC<{
     isTranslatingGr: boolean;
     onTranslate: (language: 'English' | 'Greek') => void;
 }> = ({ file, metadataTitles, onSave, onCancel, isTranslatingEn, isTranslatingGr, onTranslate }) => {
-    const [summary, setSummary] = useState('');
-    const [ocrText, setOcrText] = useState('');
-    const [translationEn, setTranslationEn] = useState('');
-    const [translationGr, setTranslationGr] = useState('');
-    const [metadata, setMetadata] = useState<Record<string, string>>({});
+    const { state, setState, resetState, undo, redo, canUndo, canRedo } = useUndoRedo<EditableState>({
+        summary: file.summary,
+        ocrText: file.ocrText,
+        translationEn: file.translationEn || '',
+        translationGr: file.translationGr || '',
+        metadata: { ...file.metadata },
+    });
 
+    // Reset history when a new file is being edited
     useEffect(() => {
-        if (file) {
-            setSummary(file.summary);
-            setOcrText(file.ocrText);
-            setTranslationEn(file.translationEn || '');
-            setTranslationGr(file.translationGr || '');
-            setMetadata(file.metadata);
-        }
-    }, [file]);
+        resetState({
+            summary: file.summary,
+            ocrText: file.ocrText,
+            translationEn: file.translationEn || '',
+            translationGr: file.translationGr || '',
+            metadata: { ...file.metadata },
+        });
+    }, [file, resetState]);
+
+    const handleFieldChange = (field: keyof EditableState, value: string | Record<string, string>) => {
+        setState({ ...state, [field]: value });
+    };
 
     const handleMetadataChange = (title: string, value: string) => {
-        setMetadata(prev => ({ ...prev, [title]: value }));
+        const newMetadata = { ...state.metadata, [title]: value };
+        handleFieldChange('metadata', newMetadata);
     };
     
     const handleSave = () => {
-        onSave(file.id, {
-            summary,
-            ocrText,
-            translationEn,
-            translationGr,
-            metadata,
-        });
+        onSave(file.id, state);
     };
 
     return (
@@ -50,7 +62,25 @@ export const EditFilePage: React.FC<{
                         <h1 className="text-2xl font-bold text-text-primary dark:text-[#C9D1D9]">Επεξεργασία Αρχείου</h1>
                         <p className="text-text-secondary dark:text-[#8B949E]">{file.originalFilename}</p>
                     </div>
-                    <div className="flex space-x-4">
+                    <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 border-r border-border-color dark:border-[#30363D] pr-4">
+                            <button
+                                onClick={undo}
+                                disabled={!canUndo}
+                                className="p-2 rounded-full text-text-secondary dark:text-[#8B949E] hover:bg-primary dark:hover:bg-[#0D1117] disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Undo"
+                            >
+                                <UndoIconSimple className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={redo}
+                                disabled={!canRedo}
+                                className="p-2 rounded-full text-text-secondary dark:text-[#8B949E] hover:bg-primary dark:hover:bg-[#0D1117] disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Redo"
+                            >
+                                <RedoIconSimple className="w-5 h-5" />
+                            </button>
+                        </div>
                         <button onClick={onCancel} className="bg-secondary dark:bg-[#161B22] text-text-primary dark:text-[#C9D1D9] px-6 py-2 rounded-md border border-border-color dark:border-[#30363D] hover:bg-border-color dark:hover:bg-[#30363D] transition-colors">
                             Ακύρωση
                         </button>
@@ -69,8 +99,8 @@ export const EditFilePage: React.FC<{
                     <div className="flex flex-col bg-secondary dark:bg-[#161B22] p-4 rounded-lg border border-border-color dark:border-[#30363D]">
                         <label className="font-semibold text-accent dark:text-[#58A6FF] mb-2 flex-shrink-0">Πρωτότυπο Κείμενο (OCR)</label>
                         <textarea 
-                            value={ocrText}
-                            onChange={e => setOcrText(e.target.value)}
+                            value={state.ocrText}
+                            onChange={e => handleFieldChange('ocrText', e.target.value)}
                             className="w-full h-64 min-h-[10rem] bg-primary dark:bg-[#0D1117] p-3 rounded-md text-sm text-text-secondary dark:text-[#8B949E] border border-border-color dark:border-[#30363D] resize-y focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-[#58A6FF]"
                         />
                     </div>
@@ -78,8 +108,8 @@ export const EditFilePage: React.FC<{
                     <div className="flex flex-col bg-secondary dark:bg-[#161B22] p-4 rounded-lg border border-border-color dark:border-[#30363D]">
                         <label className="font-semibold text-accent dark:text-[#58A6FF] mb-2 flex-shrink-0">Σύνοψη</label>
                         <textarea 
-                            value={summary}
-                            onChange={e => setSummary(e.target.value)}
+                            value={state.summary}
+                            onChange={e => handleFieldChange('summary', e.target.value)}
                             className="w-full h-48 min-h-[8rem] bg-primary dark:bg-[#0D1117] p-3 rounded-md text-sm text-text-secondary dark:text-[#8B949E] border border-border-color dark:border-[#30363D] resize-y focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-[#58A6FF]"
                         />
                     </div>
@@ -95,7 +125,7 @@ export const EditFilePage: React.FC<{
                                     ) : (
                                         <button 
                                             onClick={() => onTranslate('English')}
-                                            disabled={!ocrText.trim()}
+                                            disabled={!state.ocrText.trim()}
                                             className="flex items-center gap-1 text-xs text-purple-500 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Translate from OCR text to English"
                                         >
@@ -105,8 +135,8 @@ export const EditFilePage: React.FC<{
                                     )}
                                 </div>
                                 <textarea
-                                    value={translationEn}
-                                    onChange={e => setTranslationEn(e.target.value)}
+                                    value={state.translationEn}
+                                    onChange={e => handleFieldChange('translationEn', e.target.value)}
                                     placeholder="No English translation available."
                                     className="w-full h-32 min-h-[6rem] bg-primary dark:bg-[#0D1117] p-3 rounded-md text-sm text-text-secondary dark:text-[#8B949E] border border-border-color dark:border-[#30363D] resize-y focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-[#58A6FF]"
                                 />
@@ -119,7 +149,7 @@ export const EditFilePage: React.FC<{
                                     ) : (
                                         <button 
                                             onClick={() => onTranslate('Greek')}
-                                            disabled={!ocrText.trim()}
+                                            disabled={!state.ocrText.trim()}
                                             className="flex items-center gap-1 text-xs text-purple-500 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Translate from OCR text to Greek"
                                         >
@@ -129,8 +159,8 @@ export const EditFilePage: React.FC<{
                                     )}
                                 </div>
                                 <textarea
-                                    value={translationGr}
-                                    onChange={e => setTranslationGr(e.target.value)}
+                                    value={state.translationGr}
+                                    onChange={e => handleFieldChange('translationGr', e.target.value)}
                                     placeholder="No Greek translation available."
                                     className="w-full h-32 min-h-[6rem] bg-primary dark:bg-[#0D1117] p-3 rounded-md text-sm text-text-secondary dark:text-[#8B949E] border border-border-color dark:border-[#30363D] resize-y focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-[#58A6FF]"
                                 />
@@ -163,7 +193,7 @@ export const EditFilePage: React.FC<{
                                         <label className="text-sm font-medium text-text-secondary dark:text-[#8B949E] block mb-1 capitalize truncate" title={title.name}>{title.name}</label>
                                         <input
                                             type="text"
-                                            value={metadata[title.name] || ''}
+                                            value={state.metadata[title.name] || ''}
                                             onChange={(e) => handleMetadataChange(title.name, e.target.value)}
                                             className="w-full bg-primary dark:bg-[#0D1117] border border-border-color dark:border-[#30363D] rounded-md px-3 py-2 text-text-primary dark:text-[#C9D1D9] focus:outline-none focus:ring-2 focus:ring-accent dark:focus:ring-[#58A6FF]"
                                         />
