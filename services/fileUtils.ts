@@ -1,4 +1,5 @@
 
+
 // Helper to convert file to base64
 export const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -16,9 +17,17 @@ export const calculateFileHash = async (file: File): Promise<string> => {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-export const downloadFile = (content: string, filename: string, type: 'text/plain' | 'text/csv') => {
-    const fullContent = type === 'text/csv' ? '\uFEFF' + content : type === 'text/plain' ? content : content;
-    const mimeType = type === 'text/csv' ? 'text/csv;charset=utf-8;' : 'text/plain';
+export const downloadFile = (content: string, filename: string, type: 'text/plain' | 'text/csv' | 'application/json') => {
+    let fullContent = content;
+    // Fix: Explicitly type mimeType as string to allow for charset modification.
+    let mimeType: string = type;
+
+    if (type === 'text/csv') {
+        // Add BOM for proper Excel encoding
+        fullContent = '\uFEFF' + content;
+        mimeType = 'text/csv;charset=utf-8;';
+    }
+
     const blob = new Blob([fullContent], { type: mimeType });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Page, User, DigitizedFile, Category, MetadataTitle, Subcategory, CategoryRawInput, MetadataRawInput, ClassificationGoalSnapshot, CategorySettingsSnapshot, MetadataSettingsSnapshot } from './types';
 import Navbar from './components/Navbar';
@@ -270,14 +271,10 @@ export default function App() {
             }
         };
         const jsonString = JSON.stringify(backupData, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        link.download = `DocuDigitize-Backup-${timestamp}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const filename = `DocuDigitize-Backup-${timestamp}.json`;
+
+        downloadFile(jsonString, filename, 'application/json');
     };
 
     const handleRestoreUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
