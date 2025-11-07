@@ -37,6 +37,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate, onLogout, onSh
     <nav className="bg-secondary dark:bg-[#161B22] border-r border-border-color dark:border-[#30363D] w-64 p-4 flex flex-col flex-shrink-0">
       <div className="mb-10 text-center">
         <h1 className="text-2xl font-bold text-text-primary dark:text-[#C9D1D9]">DocuDigitize AI</h1>
+        <p className="text-xs text-text-secondary/60 dark:text-[#8B949E]/60 mt-1">v1.1.0</p>
       </div>
       <div className="flex flex-col space-y-2 flex-grow">
         <NavItem
