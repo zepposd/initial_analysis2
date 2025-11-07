@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { DigitizedFile, Category, MetadataTitle, CategoryRawInput, MetadataRawInput, CategorySettingsSnapshot, MetadataSettingsSnapshot, ClassificationGoalSnapshot, User } from '../types';
 
@@ -62,7 +61,7 @@ export const useMockData = () => {
 
 
   const addFile = (fileData: Omit<DigitizedFile, 'id'>) => {
-    const newFile: DigitizedFile = { ...fileData, id: `file-${Date.now()}` };
+    const newFile: DigitizedFile = { ...fileData, id: crypto.randomUUID() };
     setFiles(prevFiles => [...prevFiles, newFile]);
   };
 
@@ -80,7 +79,7 @@ export const useMockData = () => {
 
   // Metadata Title Management
   const addMetadataTitle = (name: string) => {
-    setMetadataTitles(prev => [...prev, { id: `meta-${Date.now()}`, name }]);
+    setMetadataTitles(prev => [...prev, { id: crypto.randomUUID(), name }]);
   };
   
   const updateMetadataTitles = (newTitles: MetadataTitle[]) => {
@@ -106,7 +105,7 @@ export const useMockData = () => {
   
   const addMetadataRawInput = (pastedText: string) => {
     const newInput: MetadataRawInput = {
-      id: `meta-raw-${Date.now()}`,
+      id: crypto.randomUUID(),
       pastedText,
       createdAt: new Date().toISOString(),
     };

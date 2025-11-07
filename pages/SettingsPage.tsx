@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo } from 'react';
 import { MetadataTitle, MetadataRawInput, User } from '../types';
 import { generateMetadataTitlesAI } from '../services/geminiService';
@@ -27,6 +26,23 @@ export const SettingsPage: React.FC<{
     const [showMetadataHistory, setShowMetadataHistory] = useState(false);
     const [newUserName, setNewUserName] = useState('');
 
+    const handleAddMetaTitle = () => {
+        const trimmedName = newMetaTitle.trim();
+        if (!trimmedName) return;
+
+        const isDuplicate = props.metadataTitles.some(
+            title => title.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            alert(`Ο τίτλος μεταδεδομένων "${trimmedName}" υπάρχει ήδη.`);
+            return;
+        }
+
+        props.onAddMetadataTitle(trimmedName);
+        setNewMetaTitle('');
+    };
+
     const handleGenAIMetadata = async (text: string) => {
         if (!text) return;
         if (text === pastedMetadata) {
@@ -36,7 +52,7 @@ export const SettingsPage: React.FC<{
         try {
             const newTitles = await generateMetadataTitlesAI(text);
             const newMetadataTitles: MetadataTitle[] = newTitles.map(name => ({
-                id: `meta-${Date.now()}-${Math.random()}`,
+                id: crypto.randomUUID(),
                 name: name
             }));
             
@@ -119,8 +135,21 @@ export const SettingsPage: React.FC<{
                         ))}
                     </div>
                     <div className="flex items-center space-x-2">
-                        <input type="text" placeholder="New metadata title" value={newMetaTitle} onChange={e => setNewMetaTitle(e.target.value)} className="flex-grow bg-primary dark:bg-[#0D1117] border border-border-color dark:border-[#30363D] rounded px-3 py-2" />
-                        <button onClick={() => {props.onAddMetadataTitle(newMetaTitle); setNewMetaTitle('');}} className="bg-green-600 p-2 rounded hover:bg-green-500"><PlusIcon /></button>
+                        <input 
+                            type="text" 
+                            placeholder="New metadata title" 
+                            value={newMetaTitle} 
+                            onChange={e => setNewMetaTitle(e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && handleAddMetaTitle()}
+                            className="flex-grow bg-primary dark:bg-[#0D1117] border border-border-color dark:border-[#30363D] rounded px-3 py-2" 
+                        />
+                        <button 
+                            onClick={handleAddMetaTitle} 
+                            disabled={!newMetaTitle.trim()}
+                            className="bg-green-600 p-2 rounded hover:bg-green-500 disabled:opacity-50"
+                        >
+                            <PlusIcon />
+                        </button>
                     </div>
                 </div>
                  <div className="mt-auto pt-4 border-t border-border-color dark:border-[#30363D]">
